@@ -1,0 +1,54 @@
+version: "3.3"
+
+services:
+  backend:
+    container_name: incident_be
+    build:
+      context: incidents
+    volumes:
+      - "./incidents:/code"
+    command: ["sh", "./start.sh"]
+    env_file:
+      - ./incidents/.env
+    expose:
+      - 8080
+    depends_on:
+      - db
+    networks:
+      - main
+    restart: on-failure
+
+  nginx:
+    container_name: incident_nginx
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+    networks:
+      - main
+
+  db:
+    container_name: incident_db
+    image: postgres:13
+    networks:
+      - main
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=mysekretpassword
+      - POSTGRES_USER=incident-user
+      - POSTGRES_DB=incident-db
+
+
+networks:
+  main:
+    driver: bridge
+
+volumes:
+  pg-data:
